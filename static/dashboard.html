@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Widget Platform - Owner Dashboard</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --danger: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .auth-box { display: flex; gap: 0.5rem; align-items: center; }
+    .auth-box input {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      min-width: 280px;
+    }
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #e2e8f0; color: #1e293b; }
+    .btn-secondary:hover { background: #cbd5e1; }
+    .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .stat-title { font-size: 0.875rem; color: var(--muted); font-weight: 500; }
+    .stat-value { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .section-title { font-size: 1.125rem; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; }
+    th { background: #f1f5f9; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--muted); }
+    td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .code-snippet {
+      background: #f1f5f9;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      display: block;
+      word-break: break-all;
+    }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.875rem;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 8px;
+      width: 500px;
+      max-width: 90%;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Lead-Capture Platform Dashboard</h1>
+    <div class="auth-box">
+      <input type="text" id="apiKeyInput" placeholder="Enter Tenant API Key (e.g. sk_live_demo_12345)" />
+      <button class="btn" onclick="loadDashboard()">Load Dashboard</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid-stats">
+      <div class="stat-card">
+        <div class="stat-title">Active Widgets</div>
+        <div class="stat-value" id="statWidgets">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Total Submissions</div>
+        <div class="stat-value" id="statSubmissions">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Submissions (24h)</div>
+        <div class="stat-value" id="stat24h">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Submissions (7d)</div>
+        <div class="stat-value" id="stat7d">-</div>
+      </div>
+    </div>
+
+    <!-- Widgets List Section -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Your Managed Widgets</div>
+        <button class="btn" onclick="openCreateModal()">+ Create New Widget</button>
+      </div>
+      <table id="widgetsTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Title</th>
+            <th>Embed Snippet</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="widgetsBody">
+          <tr><td colspan="5" style="text-align:center; color:var(--muted);">Load API Key to view widgets</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recent Submissions Section -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Captured Submissions & Geolocation</div>
+        <button class="btn btn-secondary" onclick="loadDashboard()">Refresh</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Widget</th>
+            <th>Submitted Data</th>
+            <th>Visitor IP</th>
+            <th>Enriched Location</th>
+          </tr>
+        </thead>
+        <tbody id="submissionsBody">
+          <tr><td colspan="5" style="text-align:center; color:var(--muted);">No submissions loaded</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Create Widget Modal -->
+  <div class="modal" id="createModal">
+    <div class="modal-content">
+      <h2 style="margin-bottom: 1rem; font-size: 1.25rem;">Create New Widget</h2>
+      <div class="form-group">
+        <label>Widget Name</label>
+        <input type="text" id="newWidgetName" placeholder="e.g. Homepage Lead Capture" />
+      </div>
+      <div class="form-group">
+        <label>Widget Type</label>
+        <select id="newWidgetType">
+          <option value="signup_form">Signup Form</option>
+          <option value="popover">Popover Modal</option>
+          <option value="cta">Call to Action</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Display Title</label>
+        <input type="text" id="newWidgetTitle" placeholder="e.g. Get 20% Off Your First Order" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="newWidgetDesc" placeholder="e.g. Subscribe to our newsletter today." />
+      </div>
+      <div class="form-group">
+        <label>Theme Color</label>
+        <input type="color" id="newWidgetColor" value="#2563eb" style="height:40px; padding:2px;" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.5rem;">
+        <button class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+        <button class="btn" onclick="submitCreateWidget()">Create Widget</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentApiKey = localStorage.getItem('wp_api_key') || 'sk_live_demo_12345';
+    document.getElementById('apiKeyInput').value = currentApiKey;
+
+    function getHeaders() {
+      return {
+        'X-API-Key': currentApiKey,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    async function loadDashboard() {
+      currentApiKey = document.getElementById('apiKeyInput').value.trim();
+      if (!currentApiKey) {
+        alert('Please provide a valid Tenant API Key');
+        return;
+      }
+      localStorage.setItem('wp_api_key', currentApiKey);
+
+      try {
+        // Fetch stats
+        const statsRes = await fetch('/api/v1/dashboard/stats', { headers: getHeaders() });
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          document.getElementById('statWidgets').innerText = stats.total_widgets;
+          document.getElementById('statSubmissions').innerText = stats.total_submissions;
+          document.getElementById('stat24h').innerText = stats.submissions_24h;
+          document.getElementById('stat7d').innerText = stats.submissions_7d;
+        }
+
+        // Fetch widgets
+        const widgetsRes = await fetch('/api/v1/admin/widgets', { headers: getHeaders() });
+        const widgetsBody = document.getElementById('widgetsBody');
+        if (widgetsRes.ok) {
+          const widgets = await widgetsRes.json();
+          if (widgets.length === 0) {
+            widgetsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">No widgets created yet. Click "+ Create New Widget".</td></tr>';
+          } else {
+            widgetsBody.innerHTML = widgets.map(w => `
+              <tr>
+                <td><strong>${escapeHtml(w.name)}</strong></td>
+                <td><span class="badge badge-blue">${escapeHtml(w.type)}</span></td>
+                <td>${escapeHtml(w.title)}</td>
+                <td>
+                  <code class="code-snippet">${escapeHtml(w.embed_snippet)}</code>
+                </td>
+                <td>
+                  <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.3rem 0.6rem;" onclick="navigator.clipboard.writeText('${escapeHtml(w.embed_snippet)}'); alert('Snippet copied!');">Copy</button>
+                </td>
+              </tr>
+            `).join('');
+          }
+        }
+
+        // Fetch submissions
+        const subsRes = await fetch('/api/v1/dashboard/submissions?limit=50', { headers: getHeaders() });
+        const subsBody = document.getElementById('submissionsBody');
+        if (subsRes.ok) {
+          const subs = await subsRes.json();
+          if (subs.items.length === 0) {
+            subsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">No submissions captured yet.</td></tr>';
+          } else {
+            subsBody.innerHTML = subs.items.map(s => `
+              <tr>
+                <td>${new Date(s.created_at).toLocaleString()}</td>
+                <td><strong>${escapeHtml(s.widget_name || s.widget_id)}</strong></td>
+                <td><pre style="margin:0; font-family:monospace; font-size:0.8rem;">${escapeHtml(JSON.stringify(s.payload, null, 2))}</pre></td>
+                <td><code>${escapeHtml(s.ip_address || 'Unknown')}</code></td>
+                <td>
+                  ${s.geo && s.geo.country ? `<span class="badge badge-green">${escapeHtml(s.geo.city || '')}, ${escapeHtml(s.geo.country)}</span> (${escapeHtml(s.geo.provider || '')})` : '<span style="color:var(--muted);">No geo data</span>'}
+                </td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (e) {
+        alert('Failed to connect to API: ' + e.message);
+      }
+    }
+
+    function openCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+    function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; }
+
+    async function submitCreateWidget() {
+      const name = document.getElementById('newWidgetName').value.trim();
+      const type = document.getElementById('newWidgetType').value;
+      const title = document.getElementById('newWidgetTitle').value.trim();
+      const desc = document.getElementById('newWidgetDesc').value.trim();
+      const color = document.getElementById('newWidgetColor').value;
+
+      if (!name || !title) {
+        alert('Please enter Widget Name and Title');
+        return;
+      }
+
+      const payload = {
+        name: name,
+        type: type,
+        title: title,
+        description: desc,
+        fields: [
+          { name: 'name', label: 'Full Name', type: 'text', required: true },
+          { name: 'email', label: 'Email Address', type: 'email', required: true }
+        ],
+        button_text: 'Get Started',
+        display_options: {
+          position: 'bottom-right',
+          theme_color: color,
+          headline_color: '#111827',
+          trigger: 'immediate',
+          delay_seconds: 0
+        }
+      };
+
+      const res = await fetch('/api/v1/admin/widgets', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        closeCreateModal();
+        loadDashboard();
+      } else {
+        const err = await res.json();
+        alert('Creation failed: ' + JSON.stringify(err));
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Auto load on start if API key exists
+    window.addEventListener('DOMContentLoaded', () => {
+      if (document.getElementById('apiKeyInput').value) {
+        loadDashboard();
+      }
+    });
+  </script>
+</body>
+</html>
